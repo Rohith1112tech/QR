@@ -1,8 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import mongoose from 'mongoose';
-import Content from './models/Content.js';
+import { getDBPool } from './config/db.js';
 import { uploadBuffer, deleteFromCloudinary, isCloudinaryConfigured } from './config/cloudinary.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,9 +15,10 @@ if (!fs.existsSync(UPLOADS_DIR)) {
   fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
 
-// Helper to check if MongoDB is active
-function isMongoActive() {
-  return mongoose.connection.readyState === 1;
+// Helper to check if PG connection pool is active
+function isPGActive() {
+  const pool = getDBPool();
+  return pool !== null;
 }
 
 // --- LOCAL JSON DATABASE HELPERS ---
@@ -53,7 +53,7 @@ async function writeLocalDB(data) {
  * @param {string} [params.content] - Text content (if type === 'text')
  * @param {object} [params.file] - Multer file object (if type === 'image' or 'video')
  * @param {number} params.expiryHours - 1 | 24 | 168 (7 days)
- * @returns {Promise<object>} Saved document/record info
+ * @returns {Promise<object>} Saved document/record info (mapped to camelCase)
  */
 export async function saveContent({ shortId, type, content, file, expiryHours }) {
   const createdAt = new Date();
@@ -90,24 +90,48 @@ export async function saveContent({ shortId, type, content, file, expiryHours })
     }
   }
 
-  const recordData = {
-    shortId,
-    type,
-    content: type === 'text' ? content : undefined,
-    mediaUrl: mediaUrl || undefined,
-    cloudinaryPublicId: cloudinaryPublicId || undefined,
-    localFilePath: localFilePath || undefined,
-    createdAt,
-    expiresAt
-  };
-
-  if (isMongoActive()) {
-    // Mongo save
-    const newContent = new Content(recordData);
-    await newContent.save();
-    return newContent.toObject();
+  if (isPGActive()) {
+    // PostgreSQL Save
+    const pool = getDBPool();
+    const query = `
+      INSERT INTO contents (short_id, type, content, media_url, cloudinary_public_id, local_file_path, expires_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING *
+    `;
+    const values = [
+      shortId,
+      type,
+      type === 'text' ? content : null,
+      mediaUrl,
+      cloudinaryPublicId,
+      localFilePath,
+      expiresAt
+    ];
+    
+    const res = await pool.query(query, values);
+    const row = res.rows[0];
+    
+    return {
+      shortId: row.short_id,
+      type: row.type,
+      content: row.content,
+      mediaUrl: row.media_url,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at
+    };
   } else {
-    // Local JSON save
+    // Local JSON save fallback
+    const recordData = {
+      shortId,
+      type,
+      content: type === 'text' ? content : undefined,
+      mediaUrl: mediaUrl || undefined,
+      cloudinaryPublicId: cloudinaryPublicId || undefined,
+      localFilePath: localFilePath || undefined,
+      createdAt,
+      expiresAt
+    };
+    
     const db = await readLocalDB();
     db.push(recordData);
     await writeLocalDB(db);
@@ -123,16 +147,29 @@ export async function saveContent({ shortId, type, content, file, expiryHours })
 export async function getContent(shortId) {
   const now = new Date();
 
-  if (isMongoActive()) {
-    const record = await Content.findOne({ shortId });
-    if (!record) return null;
+  if (isPGActive()) {
+    // PostgreSQL Fetch
+    const pool = getDBPool();
+    const query = `
+      SELECT * FROM contents 
+      WHERE short_id = $1 AND expires_at > NOW()
+    `;
+    const res = await pool.query(query, [shortId]);
+    if (res.rows.length === 0) return null;
+    const row = res.rows[0];
     
-    // Check if expired
-    if (record.expiresAt < now) {
-      return null;
-    }
-    return record.toObject();
+    return {
+      shortId: row.short_id,
+      type: row.type,
+      content: row.content,
+      mediaUrl: row.media_url,
+      cloudinaryPublicId: row.cloudinary_public_id,
+      localFilePath: row.local_file_path,
+      createdAt: row.created_at,
+      expiresAt: row.expires_at
+    };
   } else {
+    // Local JSON Fetch
     const db = await readLocalDB();
     const record = db.find(item => item.shortId === shortId);
     if (!record) return null;
@@ -154,33 +191,41 @@ export async function deleteExpiredContent() {
   const now = new Date();
   let deletedCount = 0;
 
-  if (isMongoActive()) {
-    // Find all expired records
-    const expiredRecords = await Content.find({ expiresAt: { $lt: now } });
-    
-    for (const record of expiredRecords) {
+  if (isPGActive()) {
+    // PostgreSQL expired records fetch and delete
+    const pool = getDBPool();
+    const selectQuery = `
+      SELECT * FROM contents 
+      WHERE expires_at < $1
+    `;
+    const res = await pool.query(selectQuery, [now]);
+    const expiredRecords = res.rows;
+
+    for (const row of expiredRecords) {
       // Delete Cloudinary asset if present
-      if (record.cloudinaryPublicId) {
+      if (row.cloudinary_public_id) {
         try {
-          await deleteFromCloudinary(record.cloudinaryPublicId, record.type);
+          await deleteFromCloudinary(row.cloudinary_public_id, row.type);
         } catch (err) {
-          console.error(`Failed to clean Cloudinary asset for ${record.shortId}:`, err.message);
+          console.error(`Failed to clean Cloudinary asset for ${row.short_id}:`, err.message);
         }
       }
-      // Delete local file if present (just in case)
-      if (record.localFilePath && fs.existsSync(record.localFilePath)) {
+      // Delete local file if present
+      if (row.local_file_path && fs.existsSync(row.local_file_path)) {
         try {
-          await fs.promises.unlink(record.localFilePath);
-          console.log(`🗑️ Deleted local expired file: ${record.localFilePath}`);
+          await fs.promises.unlink(row.local_file_path);
+          console.log(`🗑️ Deleted local expired file: ${row.local_file_path}`);
         } catch (err) {
-          console.error(`Failed to delete local file for ${record.shortId}:`, err.message);
+          console.error(`Failed to delete local file for ${row.short_id}:`, err.message);
         }
       }
       
-      await Content.deleteOne({ _id: record._id });
+      // Delete record from DB
+      await pool.query('DELETE FROM contents WHERE short_id = $1', [row.short_id]);
       deletedCount++;
     }
   } else {
+    // Local JSON DB expired clean fallback
     const db = await readLocalDB();
     const activeRecords = [];
     const expiredRecords = [];

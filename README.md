@@ -5,16 +5,16 @@ A dynamic, temporary QR Content sharing application. Users can upload text, phot
 ---
 
 ## Technical Stack
-- **Frontend**: React (Vite) + Vanilla CSS (Glassmorphism & animations) — Hosted on **Netlify**
-- **Backend API**: Node.js (Express) — Hosted on **Render**
-- **Database**: MongoDB Atlas
+- **Frontend**: React (Vite) + Vanilla CSS (Glassmorphic & animations) — Hosted on **Netlify**
+- **Backend API**: Node.js (Express) + PostgreSQL — Hosted on **Render**
+- **Database**: PostgreSQL (Render Managed Database)
 - **Media Storage**: Cloudinary CDN
 
 ---
 
 ## Local Development (Quickstart)
 
-Thanks to the **Local Fallback Mode**, you can run and test this application locally out-of-the-box without configuring MongoDB or Cloudinary credentials!
+Thanks to the **Local Fallback Mode**, you can run and test this application locally out-of-the-box without configuring PostgreSQL or Cloudinary credentials!
 
 ### 1. Run the Backend API
 1. Navigate to the `backend` folder:
@@ -50,17 +50,22 @@ Thanks to the **Local Fallback Mode**, you can run and test this application loc
 
 ## Deployment Instructions
 
-### 1. Backend Deployment (Render)
+### 1. Backend & Database Deployment (Render)
 1. Push the code to a Git repository (GitHub / GitLab).
 2. Connect your Git repository to **Render**.
-3. Create a new **Web Service** selecting the `backend` subfolder as the base directory (or use Render's Blueprint with the included [render.yaml](file:///d:/QR/backend/render.yaml) file).
-4. Add the following **Environment Variables** in the Render settings dashboard:
+3. Create a new **Blueprint** deployment using the included [render.yaml](file:///d:/QR/backend/render.yaml) file, OR manually set up a new **PostgreSQL Database** and a **Web Service** on Render:
+   - **Database**: Create a new PostgreSQL instance (Free tier). Copy its **Internal Database URL** connection string.
+   - **Web Service**: Create a Node web service:
+     - **Base Directory**: `backend`
+     - **Build Command**: `npm install`
+     - **Start Command**: `npm start`
+4. Set the following **Environment Variables** in the Web Service dashboard:
 
 | Variable Name | Description | Example / Note |
 | :--- | :--- | :--- |
 | `NODE_ENV` | Production environment flag | `production` |
 | `PORT` | Listening port (handled by Render) | `5000` |
-| `MONGODB_URI` | MongoDB Atlas Connection string | `mongodb+srv://user:pass@cluster.mongodb.net/...` |
+| `DATABASE_URL` | PostgreSQL connection string | `postgres://user:pass@host:port/dbname` (Auto-linked if using Blueprints) |
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary Name | Get from Cloudinary Dashboard |
 | `CLOUDINARY_API_KEY` | Cloudinary API Key | Get from Cloudinary Dashboard |
 | `CLOUDINARY_API_SECRET` | Cloudinary API Secret | Get from Cloudinary Dashboard |
@@ -79,4 +84,4 @@ Thanks to the **Local Fallback Mode**, you can run and test this application loc
 
 | Variable Name | Description | Example |
 | :--- | :--- | :--- |
-| `VITE_API_URL` | URL pointing to your deployed Render API | `https://qr-content-generator-api.onrender.com` |
+| `VITE_API_URL` | URL pointing to your deployed Render API | `https://qr-generator-api.onrender.com` |

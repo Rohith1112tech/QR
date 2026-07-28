@@ -1,6 +1,10 @@
+databases:
+  - name: qr-postgres-db
+    plan: free
+
 services:
   - type: web
-    name: qr-content-generator-api
+    name: qr-generator-api
     env: node
     plan: free
     buildCommand: npm install
@@ -10,13 +14,15 @@ services:
         value: production
       - key: PORT
         value: 5000
-      - key: MONGODB_URI
-        sync: false # User must set this value in the Render dashboard
+      - key: DATABASE_URL
+        fromDatabase:
+          name: qr-postgres-db
+          property: connectionString
       - key: CLOUDINARY_CLOUD_NAME
-        sync: false # User must set this value in the Render dashboard
+        sync: false # Set in Render Dashboard
       - key: CLOUDINARY_API_KEY
-        sync: false # User must set this value in the Render dashboard
+        sync: false # Set in Render Dashboard
       - key: CLOUDINARY_API_SECRET
-        sync: false # User must set this value in the Render dashboard
+        sync: false # Set in Render Dashboard
       - key: FRONTEND_URL
-        sync: false # User must set this value in the Render dashboard (e.g. Netlify URL)
+        sync: false # Set in Render Dashboard
