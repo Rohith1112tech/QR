@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: qr-content-generator-api
+    env: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGODB_URI
+        sync: false # User must set this value in the Render dashboard
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false # User must set this value in the Render dashboard
+      - key: CLOUDINARY_API_KEY
+        sync: false # User must set this value in the Render dashboard
+      - key: CLOUDINARY_API_SECRET
+        sync: false # User must set this value in the Render dashboard
+      - key: FRONTEND_URL
+        sync: false # User must set this value in the Render dashboard (e.g. Netlify URL)
