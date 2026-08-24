@@ -92,9 +92,14 @@ app.post('/api/create', upload.single('file'), async (req, res) => {
     }
 
     // Parse and validate expiryHours
-    let expiryHours = parseInt(expiryHoursRaw, 10);
-    if (isNaN(expiryHours) || expiryHours <= 0) {
-      expiryHours = 24; // Default to 24 hours
+    let expiryHours;
+    if (expiryHoursRaw === 'never') {
+      expiryHours = 876000; // 100 years (effectively never)
+    } else {
+      expiryHours = parseInt(expiryHoursRaw, 10);
+      if (isNaN(expiryHours) || expiryHours <= 0) {
+        expiryHours = 24; // Default to 24 hours
+      }
     }
 
     // Generate unique shortId (collision-proof)

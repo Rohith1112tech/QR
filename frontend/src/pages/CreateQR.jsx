@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   FileText, 
-  Image, 
+  Image as ImageIcon, 
   Video, 
   UploadCloud, 
   X, 
@@ -10,8 +10,11 @@ import {
   Check, 
   AlertCircle, 
   QrCode, 
-  RefreshCw 
+  RefreshCw,
+  Palette,
+  Sliders
 } from 'lucide-react';
+import QRCode from 'qrcode';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -28,6 +31,12 @@ export default function CreateQR() {
   const [result, setResult] = useState(null); // { shortId, qrCode, viewUrl, expiresAt }
   const [copied, setCopied] = useState(false);
   
+  // QR Code Customization States
+  const [fgColor, setFgColor] = useState('#000000');
+  const [bgColor, setBgColor] = useState('#ffffff');
+  const [qrMargin, setQrMargin] = useState(2);
+  const [customQrUrl, setCustomQrUrl] = useState('');
+
   const fileInputRef = useRef(null);
 
   // Tab switcher helper
@@ -149,7 +158,7 @@ export default function CreateQR() {
         shortId: data.shortId,
         qrCode: data.qrCode,
         viewUrl: data.viewUrl,
-        expiresAt: new Date(data.expiresAt).toLocaleString()
+        expiresAt: data.expiresAt
       });
 
     } catch (err) {
@@ -160,11 +169,33 @@ export default function CreateQR() {
     }
   };
 
+  // Dynamic QR Code Customizer hook
+  useEffect(() => {
+    if (result && result.viewUrl) {
+      QRCode.toDataURL(result.viewUrl, {
+        color: {
+          dark: fgColor,
+          light: bgColor
+        },
+        margin: qrMargin,
+        width: 400,
+        errorCorrectionLevel: 'H'
+      })
+      .then(url => {
+        setCustomQrUrl(url);
+      })
+      .catch(err => {
+        console.error('Failed to regenerate customized QR Code:', err);
+      });
+    }
+  }, [result, fgColor, bgColor, qrMargin]);
+
   // Action helpers
   const handleDownload = () => {
-    if (!result) return;
+    const downloadUrl = customQrUrl || result?.qrCode;
+    if (!downloadUrl) return;
     const link = document.createElement('a');
-    link.href = result.qrCode;
+    link.href = downloadUrl;
     link.download = `qr-code-${result.shortId}.png`;
     document.body.appendChild(link);
     link.click();
@@ -187,6 +218,10 @@ export default function CreateQR() {
     setResult(null);
     setTextContent('');
     setFile(null);
+    setFgColor('#000000');
+    setBgColor('#ffffff');
+    setQrMargin(2);
+    setCustomQrUrl('');
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl);
       setPreviewUrl('');
@@ -194,11 +229,14 @@ export default function CreateQR() {
     setError('');
   };
 
+  const isNeverExpiry = result && new Date(result.expiresAt).getFullYear() > 2100;
+  const formattedExpiry = result ? (isNeverExpiry ? 'Never' : new Date(result.expiresAt).toLocaleString()) : '';
+
   return (
     <div className="glass-container">
       <div className="header">
         <h1>QR Content Generator</h1>
-        <p>Generate temporary QR codes that link to text, photos, or videos.</p>
+        <p>Generate dynamic QR codes that link to text, photos, or videos.</p>
       </div>
 
       {error && (
@@ -225,7 +263,7 @@ export default function CreateQR() {
               className={`tab-btn ${activeTab === 'image' ? 'active' : ''}`}
               onClick={() => handleTabChange('image')}
             >
-              <Image size={18} />
+              <ImageIcon size={18} />
               Photo
             </button>
             <button
@@ -321,6 +359,7 @@ export default function CreateQR() {
               <option value="1">1 Hour</option>
               <option value="24">24 Hours (Default)</option>
               <option value="168">7 Days</option>
+              <option value="never">Never</option>
             </select>
           </div>
 
@@ -347,14 +386,70 @@ export default function CreateQR() {
         /* Result QR Display Screen */
         <div className="qr-result-box">
           <h2 className="qr-title">Your QR Code is Ready!</h2>
-          <p className="qr-subtitle">Scan to view content. It will be deleted on <strong>{result.expiresAt}</strong>.</p>
+          <p className="qr-subtitle">Scan to view content. Expiry: <strong>{formattedExpiry}</strong>.</p>
           
           <div className="qr-image-wrapper">
             <img 
-              src={result.qrCode} 
+              src={customQrUrl || result.qrCode} 
               alt="Generated QR Code" 
               className="qr-image" 
             />
+          </div>
+
+          {/* NEW: QR Customization Panel */}
+          <div className="customization-panel">
+            <div className="custom-title-row">
+              <Palette size={16} style={{ color: '#60a5fa' }} />
+              <h4>QR Code Design & Colors</h4>
+            </div>
+            
+            <div className="custom-row">
+              <div className="custom-col">
+                <label className="custom-label">QR Color</label>
+                <div className="color-input-wrapper">
+                  <input 
+                    type="color" 
+                    value={fgColor} 
+                    onChange={(e) => setFgColor(e.target.value)}
+                    className="color-picker-input"
+                  />
+                  <span className="color-hex-text">{fgColor.toUpperCase()}</span>
+                </div>
+              </div>
+              
+              <div className="custom-col">
+                <label className="custom-label">Background</label>
+                <div className="color-input-wrapper">
+                  <input 
+                    type="color" 
+                    value={bgColor} 
+                    onChange={(e) => setBgColor(e.target.value)}
+                    className="color-picker-input"
+                  />
+                  <span className="color-hex-text">{bgColor.toUpperCase()}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="custom-row slider-container">
+              <div className="custom-col flex-1">
+                <div className="slider-label-row">
+                  <div className="label-with-icon">
+                    <Sliders size={14} style={{ color: '#9ca3af' }} />
+                    <label className="custom-label">Margin Spacing</label>
+                  </div>
+                  <span className="slider-val-text">{qrMargin}px</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="12" 
+                  value={qrMargin} 
+                  onChange={(e) => setQrMargin(parseInt(e.target.value, 10))}
+                  className="range-slider"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="qr-actions">
