@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   FileText, 
   Image as ImageIcon, 
@@ -231,6 +232,11 @@ export default function CreateQR() {
 
   return (
     <div className="glass-container">
+      <div className="guest-nav-header" style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', marginBottom: '1rem' }}>
+        <Link to="/dashboard" className="btn-secondary" style={{ textDecoration: 'none', padding: '0.5rem 1rem', fontSize: '0.9rem' }}>
+          Go to Dashboard / Login
+        </Link>
+      </div>
       <div className="header">
         <h1>QR Content Generator</h1>
         <p>Generate dynamic QR codes that link to text, photos, or videos.</p>

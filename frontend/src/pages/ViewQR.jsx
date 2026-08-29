@@ -162,7 +162,20 @@ export default function ViewQR() {
     const finalUrl = getFullMediaUrl(data.mediaUrl);
 
     return (
-      <>
+      <div className="viewer-layout-wrapper">
+        {data.creatorPlan !== 'premium' && (
+          <div className="viewer-ad-banner glass-container" style={{ margin: '0 auto 1.5rem', maxWidth: '800px', display: 'flex', flexDirection: 'column', padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', textAlign: 'left' }}>
+            <span className="ad-badge-tag" style={{ fontSize: '0.7rem', color: '#9ca3af', letterSpacing: '0.05em', marginBottom: '0.5rem', display: 'inline-block' }}>SPONSORED ADVERTISEMENT</span>
+            <div className="ad-banner-flex" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div>
+                <h4 style={{ margin: 0, color: '#f3f4f6', fontSize: '1.05rem' }}>🎯 Master Coding with Antigravity AI</h4>
+                <p style={{ margin: '0.2rem 0 0', color: '#9ca3af', fontSize: '0.85rem' }}>Your agentic AI coding companion. Build fullstack web applications instantly.</p>
+              </div>
+              <a href="/auth" target="_blank" rel="noopener noreferrer" className="btn-primary" style={{ textDecoration: 'none', padding: '0.4rem 1rem', fontSize: '0.85rem' }}>Get Started Free</a>
+            </div>
+          </div>
+        )}
+
         {/* TEXT CONTENT VIEWER */}
         {data.type === 'text' && (
           <div className="text-viewer-container">
@@ -260,7 +273,7 @@ export default function ViewQR() {
             </div>
           </div>
         )}
-      </>
+      </div>
     );
   }
 
