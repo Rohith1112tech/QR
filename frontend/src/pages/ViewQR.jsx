@@ -165,10 +165,6 @@ export default function ViewQR() {
         {/* TEXT CONTENT VIEWER */}
         {data.type === 'text' && (
           <div className="text-viewer-container">
-            <div className="text-viewer-badge">
-              <span className="lock-dot"></span>
-              SECURE SHARED MESSAGE
-            </div>
             <h1 className="text-content" style={getFontSizeStyle(data.content)}>
               {data.content}
             </h1>
