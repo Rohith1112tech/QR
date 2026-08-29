@@ -172,17 +172,6 @@ export default function ViewQR() {
             <h1 className="text-content" style={getFontSizeStyle(data.content)}>
               {data.content}
             </h1>
-            
-            <div className="floating-actions">
-              <button className="floating-btn" onClick={handleCopyText}>
-                {copied ? <Check size={16} style={{ color: '#10b981' }} /> : <Copy size={16} />}
-                {copied ? 'Copied text!' : 'Copy content'}
-              </button>
-              <Link to="/" className="floating-btn" style={{ textDecoration: 'none' }}>
-                <PlusCircle size={16} />
-                Create QR
-              </Link>
-            </div>
           </div>
         )}
 
@@ -215,10 +204,6 @@ export default function ViewQR() {
                 <ExternalLink size={16} />
                 Open original
               </a>
-              <Link to="/" className="floating-btn" style={{ textDecoration: 'none' }}>
-                <PlusCircle size={16} />
-                Create QR
-              </Link>
             </div>
           </div>
         )}
@@ -245,18 +230,14 @@ export default function ViewQR() {
               />
             </div>
 
-            <div className="floating-actions" style={{ marginTop: '2.5rem' }}>
-              {isMuted ? (
+            {isMuted && (
+              <div className="floating-actions" style={{ marginTop: '2.5rem' }}>
                 <button className="floating-btn" onClick={handleUnmute}>
                   <Volume2 size={16} />
                   Unmute Player
                 </button>
-              ) : null}
-              <Link to="/" className="floating-btn" style={{ textDecoration: 'none' }}>
-                <PlusCircle size={16} />
-                Create QR
-              </Link>
-            </div>
+              </div>
+            )}
           </div>
         )}
       </div>
