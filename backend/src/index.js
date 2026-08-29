@@ -93,12 +93,12 @@ app.post('/api/create', upload.single('file'), async (req, res) => {
 
     // Parse and validate expiryHours
     let expiryHours;
-    if (expiryHoursRaw === 'never') {
-      expiryHours = 876000; // 100 years (effectively never)
+    if (!expiryHoursRaw || expiryHoursRaw === 'never') {
+      expiryHours = 876000; // 100 years (effectively never) - default
     } else {
       expiryHours = parseInt(expiryHoursRaw, 10);
       if (isNaN(expiryHours) || expiryHours <= 0) {
-        expiryHours = 24; // Default to 24 hours
+        expiryHours = 876000; // Default to never
       }
     }
 

@@ -23,7 +23,7 @@ export default function CreateQR() {
   const [textContent, setTextContent] = useState('');
   const [file, setFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
-  const [expiry, setExpiry] = useState('24'); // Default 24 hours
+  const [expiry, setExpiry] = useState('never'); // Default: Never
   const [isDragging, setIsDragging] = useState(false);
   
   const [loading, setLoading] = useState(false);
@@ -356,10 +356,10 @@ export default function CreateQR() {
               value={expiry}
               onChange={(e) => setExpiry(e.target.value)}
             >
+              <option value="never">Never (Default)</option>
               <option value="1">1 Hour</option>
-              <option value="24">24 Hours (Default)</option>
+              <option value="24">24 Hours</option>
               <option value="168">7 Days</option>
-              <option value="never">Never</option>
             </select>
           </div>
 
