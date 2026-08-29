@@ -229,9 +229,6 @@ export default function CreateQR() {
     setError('');
   };
 
-  const isNeverExpiry = result && new Date(result.expiresAt).getFullYear() > 2100;
-  const formattedExpiry = result ? (isNeverExpiry ? 'Never' : new Date(result.expiresAt).toLocaleString()) : '';
-
   return (
     <div className="glass-container">
       <div className="header">
@@ -348,21 +345,6 @@ export default function CreateQR() {
             </div>
           )}
 
-          {/* Expiry Selector */}
-          <div className="form-group">
-            <label className="form-label">Auto-Deletion Expiry</label>
-            <select 
-              className="select-field"
-              value={expiry}
-              onChange={(e) => setExpiry(e.target.value)}
-            >
-              <option value="never">Never (Default)</option>
-              <option value="1">1 Hour</option>
-              <option value="24">24 Hours</option>
-              <option value="168">7 Days</option>
-            </select>
-          </div>
-
           {/* Submit Button */}
           <button 
             type="submit" 
@@ -386,7 +368,7 @@ export default function CreateQR() {
         /* Result QR Display Screen */
         <div className="qr-result-box">
           <h2 className="qr-title">Your QR Code is Ready!</h2>
-          <p className="qr-subtitle">Scan to view content. Expiry: <strong>{formattedExpiry}</strong>.</p>
+          <p className="qr-subtitle">Scan to view content.</p>
           
           <div className="qr-image-wrapper">
             <img 
